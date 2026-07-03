@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Eval Confidence Calculator — is your eval lying to you? | sigeval</title>
+<meta name="description" content="Free calculator: enter your LLM eval pass count and sample size, get a statistically honest PASS / FAIL / INCONCLUSIVE verdict, confidence interval, and how many more samples you need. By sigeval.">
+<link rel="canonical" href="https://nikolas-sapa.github.io/sigeval/">
+<meta property="og:title" content="LLM Eval Confidence Calculator — is your eval lying to you?">
+<meta property="og:description" content="17/20 passing at n=20 tells you almost nothing. Find out what your eval actually proves.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"LLM Eval Confidence Calculator","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0"},"description":"Statistically honest verdicts for LLM evaluation results."}
+</script>
+<style>
+:root{
+  --bg:#0B0B0D; --surface:#1A1A1E; --accent:#F3F2EE; --accent-hover:#FFFFFF;
+  --text:#F3F2EE; --muted:#8B8D91; --border:#26262b;
+  --pass:#4ade80; --fail:#f87171; --inconclusive:#fbbf24;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;
+  line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:64px 24px 96px}
+h1{font-family:'Sora',sans-serif;font-weight:700;font-size:2.4rem;line-height:1.1;letter-spacing:-.02em}
+h2{font-family:'Sora',sans-serif;font-weight:600;font-size:1.3rem;margin:48px 0 16px}
+.sub{color:var(--muted);font-size:1.1rem;margin-top:16px;max-width:56ch}
+.mono{font-family:'Geist Mono',monospace}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-top:40px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.field{flex:1;min-width:150px}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:8px;font-weight:500}
+input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  color:var(--text);font-family:'Geist Mono',monospace;font-size:1.1rem;padding:12px 14px;outline:none}
+input[type=number]:focus{border-color:var(--accent)}
+.verdict{margin-top:28px;padding:24px;border-radius:12px;border:1px solid var(--border);background:var(--bg)}
+.verdict-name{font-family:'Sora',sans-serif;font-weight:700;font-size:1.8rem;letter-spacing:-.01em}
+.verdict-name.PASS{color:var(--pass)} .verdict-name.FAIL{color:var(--fail)}
+.verdict-name.INCONCLUSIVE{color:var(--inconclusive)}
+.detail{color:var(--muted);margin-top:10px;font-size:.98rem}
+.detail .mono{color:var(--text)}
+.bar{position:relative;height:44px;margin-top:22px;background:var(--surface);border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.ci{position:absolute;top:0;bottom:0;background:rgba(243,242,238,.16);border-left:2px solid var(--accent);border-right:2px solid var(--accent)}
+.thr{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--fail)}
+.thr::after{content:'threshold';position:absolute;top:-20px;left:50%;transform:translateX(-50%);
+  font-size:.7rem;color:var(--fail);white-space:nowrap;font-family:'Geist Mono',monospace}
+.cta{display:inline-block;background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none;
+  padding:12px 20px;border-radius:6px;margin-top:8px;transition:background .15s ease}
+.cta:hover{background:var(--accent-hover)}
+.cta.ghost{background:transparent;color:var(--accent);border:1px solid var(--border)}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px;
+  overflow-x:auto;font-family:'Geist Mono',monospace;font-size:.9rem;color:var(--text);margin-top:12px}
+.muted{color:var(--muted)} a{color:var(--accent)}
+footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);color:var(--muted);font-size:.9rem}
+.pill{display:inline-block;font-family:'Geist Mono',monospace;font-size:.75rem;color:var(--muted);
+  border:1px solid var(--border);border-radius:6px;padding:4px 10px;margin-bottom:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">sigeval · free tool</span>
+  <h1>Is your LLM eval lying to you?</h1>
+  <p class="sub">A prompt scores 0.85 on your evals. Ship it? Depends entirely on how many
+  samples that was. <span style="color:var(--text)">17/20 passing tells you almost nothing.</span>
+  Enter your numbers and find out what your eval actually proves.</p>
+
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label for="k">Passed samples (k)</label>
+        <input type="number" id="k" value="17" min="0" step="1">
+      </div>
+      <div class="field">
+        <label for="n">Total samples (n)</label>
+        <input type="number" id="n" value="20" min="1" step="1">
+      </div>
+      <div class="field">
+        <label for="t">Pass threshold</label>
+        <input type="number" id="t" value="0.8" min="0" max="1" step="0.01">
+      </div>
+    </div>
+
+    <div class="verdict" id="verdict">
+      <div class="verdict-name" id="vname">—</div>
+      <div class="detail" id="vdetail"></div>
+      <div class="bar" id="bar"></div>
+      <div class="detail" id="vadvice" style="margin-top:18px"></div>
+    </div>
+  </div>
+
+  <h2>Stop guessing. Put this in your CI.</h2>
+  <p class="muted">This calculator is one function from <span class="mono">sigeval</span> — the
+  eval library that runs it on every commit, so a borderline result blocks the merge instead
+  of shipping a coin-flip.</p>
+  <pre>pip install sigeval
+
+from sigeval import assert_eval
+assert_eval("on_topic", scorer, sample=x, n_samples=20, threshold=0.8)
+# PASSES only if the TRUE pass-rate is significantly above 0.8</pre>
+  <p style="margin-top:24px">
+    <a class="cta" href="https://github.com/nikolas-sapa/sigeval">Star on GitHub</a>
+    <a class="cta ghost" href="https://github.com/nikolas-sapa/sigeval#readme">Read the docs</a>
+  </p>
+
+  <h2>Why "just check the average" fails</h2>
+  <p class="muted">LLMs are non-deterministic — the same prompt scores differently run to run.
+  A single pass-rate is a point estimate with real uncertainty around it. sigeval reasons about
+  the <em>confidence interval</em>: it only returns <span class="mono">PASS</span> when the true
+  rate is significantly above your bar, <span class="mono">FAIL</span> when significantly below,
+  and <span class="mono">INCONCLUSIVE</span> when you simply haven't sampled enough to know.
+  That's the difference between a green build you can trust and one that flips red next commit.</p>
+
+  <footer>
+    Built by <a href="https://github.com/nikolas-sapa">Nikolas Sapalidis</a> ·
+    <a href="https://github.com/nikolas-sapa/sigeval">sigeval</a> · MIT ·
+    Stats: Wilson score interval, 95% confidence.
+  </footer>
+</div>
+
+<script>
+// --- Wilson interval + verdict, ported 1:1 from sigeval/stats.py ---
+function wilson(k, n, z){
+  const p = k/n, z2 = z*z, denom = 1 + z2/n;
+  const center = (p + z2/(2*n)) / denom;
+  const half = (z*Math.sqrt(p*(1-p)/n + z2/(4*n*n))) / denom;
+  return [Math.max(0, center-half), Math.min(1, center+half)];
+}
+function decide(k, n, t, z){
+  const [lo, hi] = wilson(k, n, z);
+  let name = "INCONCLUSIVE";
+  if (lo > t) name = "PASS";
+  else if (hi < t) name = "FAIL";
+  return {name, lo, hi, rate:k/n};
+}
+// how many total samples (at the same observed rate) until it resolves?
+function samplesNeeded(k, n, t, z){
+  const rate = k/n;
+  for (let m = n+1; m <= n+5000; m++){
+    const km = Math.round(rate*m);
+    const d = decide(km, m, t, z);
+    if (d.name !== "INCONCLUSIVE") return {m, name:d.name};
+  }
+  return null;
+}
+const Z = 1.96;
+const $ = id => document.getElementById(id);
+
+function render(){
+  let k = parseInt($('k').value), n = parseInt($('n').value), t = parseFloat($('t').value);
+  if (!(n >= 1) || !(k >= 0) || k > n || !(t >= 0 && t <= 1)){
+    $('vname').textContent = "—"; $('vname').className = "verdict-name";
+    $('vdetail').innerHTML = '<span class="muted">Need 0 ≤ k ≤ n, n ≥ 1, 0 ≤ threshold ≤ 1.</span>';
+    $('bar').innerHTML = ''; $('vadvice').innerHTML = ''; return;
+  }
+  const d = decide(k, n, t, Z);
+  $('vname').textContent = d.name; $('vname').className = "verdict-name " + d.name;
+  $('vdetail').innerHTML =
+    `${k}/${n} passed &nbsp;·&nbsp; rate <span class="mono">${d.rate.toFixed(2)}</span>` +
+    ` &nbsp;·&nbsp; 95% CI <span class="mono">[${d.lo.toFixed(2)}, ${d.hi.toFixed(2)}]</span>` +
+    ` &nbsp;·&nbsp; threshold <span class="mono">${t.toFixed(2)}</span>`;
+  // interval bar
+  $('bar').innerHTML =
+    `<div class="ci" style="left:${d.lo*100}%;width:${(d.hi-d.lo)*100}%"></div>` +
+    `<div class="thr" style="left:${t*100}%"></div>`;
+  // advice
+  if (d.name === "INCONCLUSIVE"){
+    const need = samplesNeeded(k, n, t, Z);
+    $('vadvice').innerHTML = need
+      ? `<span style="color:var(--inconclusive)">You can't call this yet.</span> At this rate you'd need about <span class="mono">${need.m}</span> samples (${need.m - n} more) before it resolves to <span class="mono">${need.name}</span>. Shipping on ${n} samples is a guess.`
+      : `<span style="color:var(--inconclusive)">Too close to the threshold to resolve at any realistic sample size.</span> Your true rate sits right on the line.`;
+  } else if (d.name === "PASS"){
+    $('vadvice').innerHTML = `<span style="color:var(--pass)">Safe to ship.</span> The true pass-rate is significantly above ${t.toFixed(2)} at 95% confidence.`;
+  } else {
+    $('vadvice').innerHTML = `<span style="color:var(--fail)">Do not ship.</span> The true pass-rate is significantly below ${t.toFixed(2)} at 95% confidence.`;
+  }
+}
+['k','n','t'].forEach(id => $(id).addEventListener('input', render));
+render();
+
+// tiny self-check (visible in console) — mirrors the Python test cases
+console.assert(decide(17,20,0.8,1.96).name === "INCONCLUSIVE", "17/20 should be INCONCLUSIVE");
+console.assert(decide(850,1000,0.8,1.96).name === "PASS", "850/1000 should be PASS");
+console.assert(decide(2,20,0.8,1.96).name === "FAIL", "2/20 should be FAIL");
+</script>
+</body>
+</html>
