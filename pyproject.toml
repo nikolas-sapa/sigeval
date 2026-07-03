@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sigeval"
+version = "0.0.1"
+description = "pytest for LLMs that isn't flaky — statistically rigorous eval verdicts"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = ["llm", "eval", "evaluation", "pytest", "testing", "statistics", "flaky"]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest"]
