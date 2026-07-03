@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sigeval"
-version = "0.0.1"
+version = "0.1.0"
 description = "pytest for LLMs that isn't flaky — statistically rigorous eval verdicts"
 readme = "README.md"
 requires-python = ">=3.10"

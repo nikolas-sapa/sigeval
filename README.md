@@ -56,6 +56,37 @@ assert not regressions, f"significant quality drop: {regressions}"
 save_baseline(results, "baseline.json")
 ```
 
+## Sample budgeting (cut CI cost)
+
+Fixed-N sampling wastes money — once the interval clears the threshold, extra
+samples change nothing. Budgeting samples in batches and stops the moment the
+verdict locks:
+
+```python
+from sigeval import run_case_budgeted
+
+res = run_case_budgeted("on_topic", scorer, sample=ARTICLE,
+                        threshold=0.8, min_samples=8, max_samples=200)
+print(res.n)   # often 8-24 instead of 200 for a clearly-good model
+```
+
+A clearly-good or clearly-bad model resolves in a handful of samples; only a
+model sitting right on the threshold spends the full budget (and returns
+`INCONCLUSIVE` — the honest answer).
+
+## LLM-as-judge, no lock-in
+
+```python
+from sigeval import make_judge
+
+judge = make_judge(complete_fn, criterion="answer is grounded in the context")
+scorer = lambda case: judge(my_llm(case))
+```
+
+`complete_fn` is any `callable(prompt) -> str` — OpenAI, Anthropic, Ollama,
+vLLM, or a stub in tests. Judge noise flows through the same statistics as
+everything else.
+
 ## Design
 
 - **Model-agnostic.** A scorer is any `callable(sample) -> bool`. Bring any
@@ -67,8 +98,8 @@ save_baseline(results, "baseline.json")
 
 ## Status
 
-v0.0.1 — core statistics + regression gate, fully tested. Roadmap: sample
-budgeting (stop early once a verdict is statistically locked, to cut CI cost),
-pytest plugin with per-case reporting, LLM-judge scorer helpers.
+v0.1.0 — core statistics, regression gate, sample budgeting, LLM-judge helper,
+and an optional pytest reporting plugin. Fully tested, stdlib-only. Roadmap:
+richer per-case CI reporting, cost dashboards, adaptive batch sizing.
 
 MIT.

@@ -12,7 +12,10 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sigeval.stats import wilson_interval, two_proportion_pvalue, decide
-from sigeval import run_suite, save_baseline, check_regression
+from sigeval import (
+    run_suite, save_baseline, check_regression,
+    run_case_budgeted, make_judge,
+)
 
 
 def test_wilson_bounds_are_sane():
@@ -70,6 +73,38 @@ def test_end_to_end_suite_and_baseline():
     results3 = run_suite(cases, bad, n_samples=200, threshold=0.8)
     assert len(check_regression(results3, path)) == 2
     os.remove(path)
+
+
+def test_budget_stops_early_on_clear_pass():
+    # a near-perfect scorer should lock a PASS well before max_samples
+    calls = {"n": 0}
+    def scorer(_s):
+        calls["n"] += 1
+        return True  # 100% pass -> interval clears 0.8 fast
+    res = run_case_budgeted("easy", scorer, "x", threshold=0.8,
+                            min_samples=8, max_samples=200, batch=8)
+    assert res.verdict.name == "PASS", res.verdict
+    assert res.n < 200, f"should have stopped early, used {res.n}"
+    assert calls["n"] == res.n  # never sampled more than it reported
+
+
+def test_budget_runs_to_max_when_borderline():
+    rng = random.Random(7)
+    # rate sits right on the threshold -> should never lock -> INCONCLUSIVE at max
+    scorer = lambda _s: rng.random() < 0.80
+    res = run_case_budgeted("borderline", scorer, "x", threshold=0.8,
+                            min_samples=8, max_samples=64, batch=8)
+    assert res.n == 64
+    assert res.verdict.name == "INCONCLUSIVE", res.verdict
+
+
+def test_judge_parses_model_verdict():
+    # stub "model": PASS only when the output contains "refund"
+    def complete(prompt):
+        return "PASS - clearly on topic" if "refund" in prompt else "FAIL, off topic"
+    scorer = make_judge(complete, criterion="is about money back")
+    assert scorer("here is our refund policy") is True
+    assert scorer("we sell hats") is False
 
 
 if __name__ == "__main__":
