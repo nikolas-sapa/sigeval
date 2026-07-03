@@ -11,22 +11,22 @@
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"LLM Eval Confidence Calculator","applicationCategory":"DeveloperApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0"},"description":"Statistically honest verdicts for LLM evaluation results."}
 </script>
 <style>
 :root{
-  --bg:#0B0B0D; --surface:#1A1A1E; --accent:#F3F2EE; --accent-hover:#FFFFFF;
-  --text:#F3F2EE; --muted:#8B8D91; --border:#26262b;
-  --pass:#4ade80; --fail:#f87171; --inconclusive:#fbbf24;
+  --bg:#0a0a0a; --surface:#171717; --accent:#006bff; --accent-hover:#0059d1;
+  --text:#ededed; --muted:#8f8f8f; --border:#2e2e2e;
+  --pass:#47a447; --fail:#ea001d; --inconclusive:#f5a623;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;
+body{background:var(--bg);color:var(--text);font-family:'Geist',sans-serif;
   line-height:1.6;-webkit-font-smoothing:antialiased}
 .wrap{max-width:720px;margin:0 auto;padding:64px 24px 96px}
-h1{font-family:'Sora',sans-serif;font-weight:700;font-size:2.4rem;line-height:1.1;letter-spacing:-.02em}
-h2{font-family:'Sora',sans-serif;font-weight:600;font-size:1.3rem;margin:48px 0 16px}
+h1{font-family:'Geist',sans-serif;font-weight:600;font-size:2.4rem;line-height:1.1;letter-spacing:-.03em}
+h2{font-family:'Geist',sans-serif;font-weight:600;font-size:1.3rem;margin:48px 0 16px;letter-spacing:-.02em}
 .sub{color:var(--muted);font-size:1.1rem;margin-top:16px;max-width:56ch}
 .mono{font-family:'Geist Mono',monospace}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-top:40px}
@@ -37,17 +37,17 @@ input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border
   color:var(--text);font-family:'Geist Mono',monospace;font-size:1.1rem;padding:12px 14px;outline:none}
 input[type=number]:focus{border-color:var(--accent)}
 .verdict{margin-top:28px;padding:24px;border-radius:12px;border:1px solid var(--border);background:var(--bg)}
-.verdict-name{font-family:'Sora',sans-serif;font-weight:700;font-size:1.8rem;letter-spacing:-.01em}
+.verdict-name{font-family:'Geist',sans-serif;font-weight:600;font-size:1.8rem;letter-spacing:-.02em}
 .verdict-name.PASS{color:var(--pass)} .verdict-name.FAIL{color:var(--fail)}
 .verdict-name.INCONCLUSIVE{color:var(--inconclusive)}
 .detail{color:var(--muted);margin-top:10px;font-size:.98rem}
 .detail .mono{color:var(--text)}
 .bar{position:relative;height:44px;margin-top:22px;background:var(--surface);border-radius:6px;overflow:hidden;border:1px solid var(--border)}
-.ci{position:absolute;top:0;bottom:0;background:rgba(243,242,238,.16);border-left:2px solid var(--accent);border-right:2px solid var(--accent)}
+.ci{position:absolute;top:0;bottom:0;background:rgba(0,107,255,.16);border-left:2px solid var(--accent);border-right:2px solid var(--accent)}
 .thr{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--fail)}
 .thr::after{content:'threshold';position:absolute;top:-20px;left:50%;transform:translateX(-50%);
   font-size:.7rem;color:var(--fail);white-space:nowrap;font-family:'Geist Mono',monospace}
-.cta{display:inline-block;background:var(--accent);color:var(--bg);font-weight:600;text-decoration:none;
+.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:600;text-decoration:none;
   padding:12px 20px;border-radius:6px;margin-top:8px;transition:background .15s ease}
 .cta:hover{background:var(--accent-hover)}
 .cta.ghost{background:transparent;color:var(--accent);border:1px solid var(--border)}
