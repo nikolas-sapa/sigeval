@@ -4,3 +4,5 @@ dist/
 build/
 *.egg-info/
 baseline.json
+NARRATIVE.md
+MARKETING.md
