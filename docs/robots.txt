@@ -1,0 +1,21 @@
+# Allow AI crawlers to read and cite this content.
+# NOTE: only effective at a host root (e.g. a custom domain). On the
+# github.io subdomain the root robots.txt is controlled elsewhere.
+
+User-agent: GPTBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: anthropic-ai
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: Bingbot
+Allow: /
+
+User-agent: *
+Allow: /
