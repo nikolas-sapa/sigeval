@@ -8,6 +8,54 @@ reason. sigeval treats an eval as what it actually is: a **proportion with a
 confidence interval**. Verdicts are `PASS`, `FAIL`, or `INCONCLUSIVE (collect
 more samples)` — never a coin-flip.
 
+## What is sigeval?
+
+**sigeval is a statistically rigorous LLM evaluation framework for Python** that treats every eval as a *proportion with a confidence interval* instead of a boolean. It gives you three honest verdicts — `PASS`, `FAIL`, or `INCONCLUSIVE (collect more samples)` — and significance-tested regression gates for CI, so non-deterministic model outputs stop producing flaky green builds.
+
+### Why sigeval
+
+Most LLM eval tools answer *"did this run pass?"* LLMs are non-deterministic, so that boolean flips on noise: a prompt scores 0.82 today and 0.78 tomorrow, and your green build turns red for no real reason. sigeval answers a different question — *"is the true pass-rate significantly above my threshold?"* — using Wilson score intervals and a two-proportion z-test. Borderline runs return `INCONCLUSIVE` instead of a coin-flip, and regressions fire only on a statistically real drop, not on sampling jitter.
+
+### sigeval vs other eval tools
+
+| | sigeval | DeepEval / RAGAS / Promptfoo / LangSmith |
+|---|---|---|
+| Core unit | Proportion + confidence interval | Single score / boolean pass |
+| Borderline result | `INCONCLUSIVE` (collect more) | Green or red on one run |
+| Regression check | Two-proportion significance test vs baseline | Raw number diff / threshold |
+| Sample cost | Budgeted — stops when the verdict locks | Fixed-N, pays for every sample |
+| Dependencies | Stdlib only (`math`) | numpy/scipy + platform SDKs |
+| Scope | The statistics layer, on purpose | Broad metric platforms |
+
+This is not a strawman: those tools do more than sigeval (datasets, tracing, dashboards, many built-in metrics). sigeval does one thing they skip — statistical significance — and is designed to sit *inside* your existing pytest suite, not replace your platform.
+
+### When to use sigeval
+
+- You run LLM evals in CI and green builds flip red on noise.
+- You need a regression gate that fires on real quality drops, not sampling jitter.
+- You want to cut eval cost by not running a fixed 200 samples when 12 already settle the verdict.
+- You already use pytest and want one function, not a new platform.
+- You want `INCONCLUSIVE` as a first-class outcome instead of a forced pass/fail.
+
+When *not* to use it: if you need built-in RAG metrics, tracing, or a hosted dashboard today, pair sigeval with one of the platforms above — it's the rigor layer, not a replacement for all of them.
+
+### FAQ
+
+**Is sigeval a replacement for DeepEval / Promptfoo / LangSmith?**
+No. It's the statistical-significance layer they don't have. Keep your platform for datasets and tracing; use sigeval for the actual pass/fail/regression decision.
+
+**How is a "flaky green build" different from a real regression?**
+A flaky green is a verdict that flips because of sampling noise (0.82 vs 0.78 on 20 samples is within the interval). A real regression is a drop the two-proportion z-test flags as significant against your saved baseline. sigeval separates the two; a raw-number diff can't.
+
+**Does it need numpy or scipy?**
+No. Wilson intervals and the z-test are hand-rolled on the standard-library `math` module. Zero dependencies.
+
+**Does it lock me into a model provider?**
+No. A scorer is any `callable(sample) -> bool`, and the LLM-as-judge helper takes any `callable(prompt) -> str` — OpenAI, Anthropic, Ollama, vLLM, or a stub in tests.
+
+**How does it cut eval cost?**
+Sample budgeting runs samples in batches and stops the moment the confidence interval clears (or fails) the threshold — often 8–24 samples instead of 200 for a clearly-good or clearly-bad model.
+
 ```python
 from sigeval import assert_eval
 
