@@ -9,6 +9,13 @@
 <meta property="og:title" content="LLM Eval Confidence Calculator — is your eval lying to you?">
 <meta property="og:description" content="17/20 passing at n=20 tells you almost nothing. Find out what your eval actually proves.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://nikolas-sapa.github.io/sigeval/">
+<meta property="og:site_name" content="sigeval">
+<meta property="og:image" content="https://nikolas-sapa.github.io/sigeval/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LLM Eval Confidence Calculator — is your eval lying to you?">
+<meta name="twitter:description" content="17/20 passing at n=20 tells you almost nothing. Find out what your eval actually proves.">
+<meta name="twitter:image" content="https://nikolas-sapa.github.io/sigeval/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -47,10 +54,18 @@ input[type=number]:focus{border-color:var(--accent)}
 .thr{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--fail)}
 .thr::after{content:'threshold';position:absolute;top:-20px;left:50%;transform:translateX(-50%);
   font-size:.7rem;color:var(--fail);white-space:nowrap;font-family:'Geist Mono',monospace}
-.cta{display:inline-block;background:var(--accent);color:#fff;font-weight:600;text-decoration:none;
-  padding:12px 20px;border-radius:6px;margin-top:8px;transition:background .15s ease}
+.prodline{margin-top:12px;font-size:1.05rem;color:var(--text)}
+.prodline .mono{color:var(--text)}
+.cta{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:600;text-decoration:none;
+  padding:12px 20px;border-radius:6px;margin-top:8px;transition:background .15s ease;
+  border:none;cursor:pointer;font-size:1rem;font-family:'Geist',sans-serif;vertical-align:middle}
 .cta:hover{background:var(--accent-hover)}
-.cta.ghost{background:transparent;color:var(--accent);border:1px solid var(--border)}
+.cta:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cta.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.cta.ghost:hover{background:var(--surface)}
+.cta .mono{font-weight:500}
+.cta img{display:block;height:20px}
+@media (prefers-reduced-motion: reduce){.cta{transition:none}}
 pre{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px;
   overflow-x:auto;font-family:'Geist Mono',monospace;font-size:.9rem;color:var(--text);margin-top:12px}
 .muted{color:var(--muted)} a{color:var(--accent)}
@@ -63,6 +78,7 @@ footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);color
 <div class="wrap">
   <span class="pill">sigeval · free tool</span>
   <h1>Is your LLM eval lying to you?</h1>
+  <p class="prodline"><span class="mono">sigeval</span> — pytest for LLMs that isn't flaky.</p>
   <p class="sub">A prompt scores 0.85 on your evals. Ship it? Depends entirely on how many
   samples that was. <span style="color:var(--text)">17/20 passing tells you almost nothing.</span>
   Enter your numbers and find out what your eval actually proves.</p>
@@ -91,7 +107,7 @@ footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);color
     </div>
   </div>
 
-  <h2>Stop guessing. Put this in your CI.</h2>
+  <h2 id="install">Stop guessing. Put this in your CI.</h2>
   <p class="muted">This calculator is one function from <span class="mono">sigeval</span> — the
   eval library that runs it on every commit, so a borderline result blocks the merge instead
   of shipping a coin-flip.</p>
@@ -101,8 +117,12 @@ from sigeval import assert_eval
 assert_eval("on_topic", scorer, sample=x, n_samples=20, threshold=0.8)
 # PASSES only if the TRUE pass-rate is significantly above 0.8</pre>
   <p style="margin-top:24px">
-    <a class="cta" href="https://github.com/nikolas-sapa/sigeval">Star on GitHub</a>
-    <a class="cta ghost" href="https://github.com/nikolas-sapa/sigeval#readme">Read the docs</a>
+    <button class="cta" id="pip-copy" type="button" aria-label="Copy pip install sigeval to clipboard">
+      <span class="mono" id="pip-copy-label">pip install sigeval</span>
+    </button>
+    <a class="cta ghost" href="https://github.com/nikolas-sapa/sigeval">Star on GitHub
+      <img src="https://img.shields.io/github/stars/nikolas-sapa/sigeval?style=flat&label=stars&color=2e2e2e" alt="GitHub star count" loading="lazy"></a>
+    <a class="cta ghost" href="https://github.com/nikolas-sapa/sigeval#readme">Read the README</a>
   </p>
 
   <h2>Why "just check the average" fails</h2>
@@ -168,9 +188,10 @@ function render(){
   // advice
   if (d.name === "INCONCLUSIVE"){
     const need = samplesNeeded(k, n, t, Z);
-    $('vadvice').innerHTML = need
+    const pitch = ` <br><span class="muted">sigeval catches exactly this in CI — <a href="#install">pip install sigeval</a></span>`;
+    $('vadvice').innerHTML = (need
       ? `<span style="color:var(--inconclusive)">You can't call this yet.</span> At this rate you'd need about <span class="mono">${need.m}</span> samples (${need.m - n} more) before it resolves to <span class="mono">${need.name}</span>. Shipping on ${n} samples is a guess.`
-      : `<span style="color:var(--inconclusive)">Too close to the threshold to resolve at any realistic sample size.</span> Your true rate sits right on the line.`;
+      : `<span style="color:var(--inconclusive)">Too close to the threshold to resolve at any realistic sample size.</span> Your true rate sits right on the line.`) + pitch;
   } else if (d.name === "PASS"){
     $('vadvice').innerHTML = `<span style="color:var(--pass)">Safe to ship.</span> The true pass-rate is significantly above ${t.toFixed(2)} at 95% confidence.`;
   } else {
@@ -179,6 +200,14 @@ function render(){
 }
 ['k','n','t'].forEach(id => $(id).addEventListener('input', render));
 render();
+
+// primary CTA: click-to-copy install command
+$('pip-copy').addEventListener('click', () => {
+  navigator.clipboard.writeText('pip install sigeval').then(() => {
+    $('pip-copy-label').textContent = 'copied';
+    setTimeout(() => { $('pip-copy-label').textContent = 'pip install sigeval'; }, 1500);
+  });
+});
 
 // tiny self-check (visible in console) — mirrors the Python test cases
 console.assert(decide(17,20,0.8,1.96).name === "INCONCLUSIVE", "17/20 should be INCONCLUSIVE");
