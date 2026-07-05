@@ -69,6 +69,37 @@ def test_summarizer_stays_on_topic():
     assert_eval("on_topic", scorer, sample=ARTICLE, n_samples=20, threshold=0.8)
 ```
 
+## Quick reference
+
+**sigeval is a statistically rigorous LLM evaluation framework for Python that
+scores every eval as a proportion with a confidence interval — returning
+`PASS`, `FAIL`, or `INCONCLUSIVE`, and firing regression gates only on a
+statistically significant drop.**
+
+Install (pre-PyPI — not published yet):
+
+```bash
+pip install git+https://github.com/nikolas-sapa/sigeval.git
+```
+
+### More FAQ
+
+**What exactly is the statistical test?**
+A Wilson score interval for each verdict, and a two-proportion z-test for
+regressions against a saved baseline. Both are hand-rolled on the standard
+library `math` module — no numpy, no scipy.
+
+**Does it only work with pytest?**
+No. `assert_eval` drops into a pytest suite, but `run_suite`,
+`check_regression`, and `run_case_budgeted` are plain functions — call them from
+any CI runner, script, or GitHub Action.
+
+**sigeval vs building it yourself?**
+You can compute a Wilson interval in ten lines. sigeval is the part that's easy
+to get subtly wrong: the two-proportion regression test vs baseline, the
+early-stop sample budgeting, `INCONCLUSIVE` as a first-class outcome, and a
+pytest reporter — tested and stdlib-only.
+
 ## Why it exists
 
 The 2026 eval landscape (DeepEval, RAGAS, Promptfoo, Braintrust, LangSmith…)
