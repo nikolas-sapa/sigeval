@@ -1,5 +1,9 @@
 # sigeval
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-F3F2EE?style=flat-square&labelColor=0B0B0D)](LICENSE)
+[![Python versions](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-F3F2EE?style=flat-square&labelColor=0B0B0D)](pyproject.toml)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-F3F2EE?style=flat-square&labelColor=0B0B0D)](CONTRIBUTING.md)
+
 **pytest for LLMs that isn't flaky.**
 
 Every other eval framework checks *"did this run pass?"* LLMs are
@@ -7,6 +11,28 @@ non-deterministic — so that green build flips red on the next commit for no
 reason. sigeval treats an eval as what it actually is: a **proportion with a
 confidence interval**. Verdicts are `PASS`, `FAIL`, or `INCONCLUSIVE (collect
 more samples)` — never a coin-flip.
+
+## Quick start
+
+```bash
+pip install git+https://github.com/nikolas-sapa/sigeval.git   # pre-PyPI
+```
+
+```python
+from sigeval import assert_eval
+
+def test_summarizer_stays_on_topic():
+    def scorer(article):
+        summary = my_llm(article)               # your model call
+        return "refund" in summary.lower()       # your assertion
+
+    # runs 20 samples, PASSES only if the TRUE pass-rate is
+    # significantly above 0.8 at 95% confidence
+    assert_eval("on_topic", scorer, sample=ARTICLE, n_samples=20, threshold=0.8)
+```
+
+Run it like any other test: `pytest`. A borderline model returns
+`INCONCLUSIVE` instead of a coin-flip pass/fail.
 
 ## What is sigeval?
 
@@ -181,4 +207,13 @@ v0.1.0 — core statistics, regression gate, sample budgeting, LLM-judge helper,
 and an optional pytest reporting plugin. Fully tested, stdlib-only. Roadmap:
 richer per-case CI reporting, cost dashboards, adaptive batch sizing.
 
-MIT.
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev
+setup, the stdlib-only constraint, and PR expectations. Please also read the
+[Code of Conduct](CODE_OF_CONDUCT.md). For security issues, see
+[SECURITY.md](SECURITY.md) rather than opening a public issue.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
