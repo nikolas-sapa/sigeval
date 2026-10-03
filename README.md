@@ -12,6 +12,17 @@ reason. sigeval treats an eval as what it actually is: a **proportion with a
 confidence interval**. Verdicts are `PASS`, `FAIL`, or `INCONCLUSIVE (collect
 more samples)` — never a coin-flip.
 
+## Statistical limits
+
+Fixed-sample Wilson intervals are approximate intervals for independent
+Bernoulli observations. They do not guarantee zero false verdicts. The
+regression z-test is also approximate, assumes independent groups, and does
+not correct for multiple cases or repeated CI runs. Repeatedly checking Wilson
+intervals while choosing when to stop does not retain nominal 95% coverage;
+`run_case_budgeted` uses this heuristic. See
+[time-uniform confidence sequences](https://arxiv.org/abs/1810.08240) for the
+separate statistical design needed for optional stopping.
+
 ## Quick start
 
 ```bash
@@ -40,7 +51,7 @@ Run it like any other test: `pytest`. A borderline model returns
 
 ### Why sigeval
 
-Most LLM eval tools answer *"did this run pass?"* LLMs are non-deterministic, so that boolean flips on noise: a prompt scores 0.82 today and 0.78 tomorrow, and your green build turns red for no real reason. sigeval answers a different question — *"is the true pass-rate significantly above my threshold?"* — using Wilson score intervals and a two-proportion z-test. Borderline runs return `INCONCLUSIVE` instead of a coin-flip, and regressions fire only on a statistically real drop, not on sampling jitter.
+Most LLM eval tools answer *"did this run pass?"* LLMs are non-deterministic, so that boolean flips on noise: a prompt scores 0.82 today and 0.78 tomorrow, and your green build turns red for no real reason. sigeval answers a different question — *"is the true pass-rate significantly above my threshold?"* — using Wilson score intervals and a two-proportion z-test. Borderline runs return `INCONCLUSIVE` instead of a coin-flip, and regressions flag drops whose one-sided p-value falls below alpha; false positives remain possible.
 
 ### sigeval vs other eval tools
 
@@ -80,7 +91,7 @@ No. Wilson intervals and the z-test are hand-rolled on the standard-library `mat
 No. A scorer is any `callable(sample) -> bool`, and the LLM-as-judge helper takes any `callable(prompt) -> str` — OpenAI, Anthropic, Ollama, vLLM, or a stub in tests.
 
 **How does it cut eval cost?**
-Sample budgeting runs samples in batches and stops the moment the confidence interval clears (or fails) the threshold — often 8–24 samples instead of 200 for a clearly-good or clearly-bad model.
+Sample budgeting checks intervals in batches and stops on the first resolved verdict. This saves calls, but repeated checks are a heuristic without nominal 95% sequential coverage.
 
 ```python
 from sigeval import assert_eval
@@ -134,19 +145,18 @@ is crowded — but they all share one hole the research keeps pointing at:
 0.78 tomorrow isn't a regression, it's noise. sigeval is the only one that
 knows the difference.
 
-Two guarantees:
+Two statistical gates:
 
-1. **No flaky greens.** A verdict is `PASS` only when the confidence-interval
+1. **Interval-based verdicts.** A verdict is `PASS` only when the confidence-interval
    lower bound clears your threshold. Borderline runs return `INCONCLUSIVE`,
    not a green build that breaks tomorrow.
-2. **No noise regressions.** `check_regression()` uses a two-proportion
-   significance test against a saved baseline — it fires on a *real* quality
-   drop, not on sampling jitter.
+2. **Significance-tested regressions.** `check_regression()` uses a two-proportion
+   significance test against a saved baseline — it flags drops whose one-sided p-value is below alpha. False positives remain possible.
 
 ## Install
 
 ```bash
-pip install sigeval   # stdlib-only, no numpy/scipy
+pip install git+https://github.com/nikolas-sapa/sigeval.git   # pre-PyPI
 ```
 
 ## Regression gate in CI
@@ -163,9 +173,11 @@ save_baseline(results, "baseline.json")
 
 ## Sample budgeting (cut CI cost)
 
-Fixed-N sampling wastes money — once the interval clears the threshold, extra
-samples change nothing. Budgeting samples in batches and stops the moment the
-verdict locks:
+Budgeting checks Wilson intervals after each batch and stops on the first
+PASS or FAIL. This is a cost-saving heuristic, not a sequentially valid 95%
+confidence guarantee. Later samples could reverse that verdict. Use fixed
+`n_samples` chosen before observing results when you need the stated
+fixed-sample interval interpretation:
 
 ```python
 from sigeval import run_case_budgeted
@@ -175,9 +187,10 @@ res = run_case_budgeted("on_topic", scorer, sample=ARTICLE,
 print(res.n)   # often 8-24 instead of 200 for a clearly-good model
 ```
 
-A clearly-good or clearly-bad model resolves in a handful of samples; only a
-model sitting right on the threshold spends the full budget (and returns
-`INCONCLUSIVE` — the honest answer).
+If no batch resolves, sampling stops at `max_samples` with INCONCLUSIVE.
+All sample counts and batch sizes must be positive integers. Statistical inputs
+must have valid binomial counts, a threshold in [0, 1], finite positive `z`,
+and regression `alpha` in (0, 1). Invalid runner inputs fail before scorer calls.
 
 ## LLM-as-judge, no lock-in
 
