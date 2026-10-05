@@ -10,6 +10,8 @@ sigeval runner consumes — so judge noise flows through the same statistical
 machinery as everything else.
 """
 
+import re
+
 DEFAULT_TEMPLATE = (
     "You are a strict evaluator. Given the CRITERION and the OUTPUT, answer with "
     "a single word: PASS if the output meets the criterion, FAIL otherwise.\n\n"
@@ -27,5 +29,5 @@ def make_judge(complete, criterion, template=DEFAULT_TEMPLATE):
         prompt = template.format(criterion=criterion, output=output)
         reply = complete(prompt).strip().upper()
         # ponytail: judges sometimes pad the verdict ("PASS." / "PASS - because")
-        return reply.startswith("PASS")
+        return re.match(r"PASS\b", reply) is not None
     return scorer

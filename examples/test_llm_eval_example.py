@@ -18,7 +18,8 @@ def fake_llm(_prompt: str) -> str:
 
 def complete(prompt: str) -> str:
     # a judge model would go here; stubbed to grade the fake_llm output
-    return "PASS" if "refund" in prompt else "FAIL"
+    output = prompt.split("\n\nOUTPUT:\n", 1)[1].rsplit("\n\nVerdict:", 1)[0]
+    return "PASS" if "refund" in output.lower() else "FAIL"
 
 
 # --- the eval ----------------------------------------------------------------
@@ -32,4 +33,4 @@ def test_refund_answer_stays_on_topic():
     # green ONLY if the true on-topic rate is significantly above 80%
     assert_eval("refund_on_topic", scorer,
                 sample="how long for my refund?",
-                n_samples=30, threshold=0.8)
+                n_samples=200, threshold=0.8)

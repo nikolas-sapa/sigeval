@@ -55,7 +55,7 @@ def test_regression_only_fires_on_significant_drop():
     assert two_proportion_pvalue(50, 50, 50, 50) == 1.0
 
 
-def test_end_to_end_suite_and_baseline():
+def test_end_to_end_suite_and_baseline(tmp_path):
     rng = random.Random(42)
     # scorer that passes ~90% of the time
     good = lambda _s: rng.random() < 0.90
@@ -63,7 +63,7 @@ def test_end_to_end_suite_and_baseline():
     results = run_suite(cases, good, n_samples=200, threshold=0.8)
     assert all(r.verdict.name == "PASS" for r in results), [str(r.verdict) for r in results]
 
-    path = "/tmp/_sigeval_baseline.json"
+    path = tmp_path / "baseline.json"
     save_baseline(results, path)
     # rerun at same quality -> no regression
     results2 = run_suite(cases, good, n_samples=200, threshold=0.8)
@@ -72,7 +72,6 @@ def test_end_to_end_suite_and_baseline():
     bad = lambda _s: rng.random() < 0.60
     results3 = run_suite(cases, bad, n_samples=200, threshold=0.8)
     assert len(check_regression(results3, path)) == 2
-    os.remove(path)
 
 
 def test_budget_stops_early_on_clear_pass():
@@ -108,8 +107,6 @@ def test_judge_parses_model_verdict():
 
 
 if __name__ == "__main__":
-    for name, fn in sorted(globals().items()):
-        if name.startswith("test_") and callable(fn):
-            fn()
-            print(f"ok  {name}")
-    print("all passed")
+    import pytest
+
+    raise SystemExit(pytest.main([__file__, "-q"]))

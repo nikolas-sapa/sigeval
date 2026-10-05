@@ -7,11 +7,15 @@ is what a reviewer actually wants to see. Enable via:
     # conftest.py
     pytest_plugins = ["sigeval.pytest_plugin"]
 
-Then call sigeval.record(result) after assert_eval / run_case, or use the
-record()-wrapped assert_eval below.
+Then import record from sigeval.pytest_plugin and call record(result) after
+assert_eval / run_case.
 """
 
 _COLLECTED = []
+
+
+def pytest_sessionstart(session):
+    _COLLECTED.clear()
 
 
 def record(result):
