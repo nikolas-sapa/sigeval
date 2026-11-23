@@ -130,3 +130,23 @@ def decide(k: int, n: int, threshold: float, z: float = 1.96) -> Verdict:
     else:
         name = "INCONCLUSIVE"
     return Verdict(name, k, n, rate, low, high, threshold)
+
+
+def _holm_adjusted(p_values: list[float]) -> list[float]:
+    """Holm step-down adjusted p-values, aligned to the input order.
+
+    Testing m cases at per-case alpha inflates the suite-wide false-alarm
+    rate toward 1 - (1 - alpha)**m — the same flake sigeval exists to kill,
+    one level up. Holm compares the i-th smallest raw p against
+    alpha/(m - i) and controls the family-wise error rate strongly, with
+    no independence assumption. Same output as statsmodels'
+    multipletests(method="holm").
+    """
+    m = len(p_values)
+    order = sorted(range(m), key=lambda i: p_values[i])
+    adjusted = [0.0] * m
+    running = 0.0
+    for rank, i in enumerate(order):
+        running = max(running, (m - rank) * p_values[i])
+        adjusted[i] = min(1.0, running)
+    return adjusted
