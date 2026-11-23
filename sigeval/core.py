@@ -49,17 +49,17 @@ def save_baseline(results, path):
         json.dump(data, f, indent=2, sort_keys=True)
 
 
-def check_regression(results, baseline_path, alpha=0.05, correction="holm"):
+def check_regression(results, baseline_path, alpha=0.05, correction=None):
     """Flag cases whose pass-rate dropped *significantly* vs baseline.
 
     Returns list of (case_id, p_value). A raw-number diff would fire on noise;
     the two-proportion test only fires when the drop clears statistical
     significance at `alpha`.
 
-    With correction="holm" (default) each case's p-value is Holm-adjusted
+    correction=None (default) compares raw per-case p-values (the v0.1.0
+    behavior). Pass correction="holm" to Holm-adjust each case's p-value
     across all compared cases, so one unlucky marginal drop in a large suite
     does not produce a false alarm — the reported p is the adjusted value.
-    correction=None compares raw per-case p-values (the v0.1.0 behavior).
     Comparisons across repeated CI runs are still uncorrected.
     """
     _validate_alpha(alpha)
