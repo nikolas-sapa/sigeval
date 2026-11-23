@@ -16,10 +16,12 @@ more samples)` — never a coin-flip.
 
 Fixed-sample Wilson intervals are approximate intervals for independent
 Bernoulli observations. They do not guarantee zero false verdicts. The
-regression z-test is also approximate, assumes independent groups, and does
-not correct for multiple cases or repeated CI runs. Repeatedly checking Wilson
-intervals while choosing when to stop does not retain nominal 95% coverage;
-`run_case_budgeted` uses this heuristic. See
+regression z-test is also approximate and assumes independent groups; by
+default `check_regression` Holm-adjusts p-values across compared cases so the
+suite-wide false-alarm rate stays at alpha (`correction=None` restores raw
+per-case p-values). Comparisons across repeated CI runs are not corrected.
+Repeatedly checking Wilson intervals while choosing when to stop does not
+retain nominal 95% coverage; `run_case_budgeted` uses this heuristic. See
 [time-uniform confidence sequences](https://arxiv.org/abs/1810.08240) for the
 separate statistical design needed for optional stopping.
 
@@ -82,7 +84,7 @@ When *not* to use it: if you need built-in RAG metrics, tracing, or a hosted das
 No. It's the statistical-significance layer they don't have. Keep your platform for datasets and tracing; use sigeval for the actual pass/fail/regression decision.
 
 **How is a "flaky green build" different from a real regression?**
-A flaky green is a verdict that flips because of sampling noise (0.82 vs 0.78 on 20 samples is within the interval). A real regression is a drop the two-proportion z-test flags as significant against your saved baseline. sigeval separates the two; a raw-number diff can't.
+A flaky green is a verdict that flips because of sampling noise (0.82 vs 0.78 on 20 samples is within the interval). A real regression is a drop the two-proportion z-test flags as significant against your saved baseline — Holm-corrected across cases so a big suite's false-alarm rate stays at alpha. sigeval separates the two; a raw-number diff can't.
 
 **Does it need numpy or scipy?**
 No. Wilson intervals and the z-test are hand-rolled on the standard-library `math` module. Zero dependencies.
@@ -151,7 +153,7 @@ Two statistical gates:
    lower bound clears your threshold. Borderline runs return `INCONCLUSIVE`,
    not a green build that breaks tomorrow.
 2. **Significance-tested regressions.** `check_regression()` uses a two-proportion
-   significance test against a saved baseline — it flags drops whose one-sided p-value is below alpha. False positives remain possible.
+   significance test against a saved baseline — it flags drops whose one-sided p-value is below alpha, Holm-adjusted across cases by default so the suite-wide false-alarm rate stays at alpha.
 
 ## Install
 
@@ -165,7 +167,8 @@ pip install git+https://github.com/nikolas-sapa/sigeval.git   # pre-PyPI
 from sigeval import run_suite, save_baseline, check_regression
 
 results = run_suite(cases, scorer, n_samples=20, threshold=0.8)
-regressions = check_regression(results, "baseline.json")   # [] on first run
+regressions = check_regression(results, "baseline.json")   # [] on first run;
+# Holm-adjusted across cases. correction=None for raw per-case p-values.
 assert not regressions, f"significant quality drop: {regressions}"
 # once green, snapshot the new baseline:
 save_baseline(results, "baseline.json")
