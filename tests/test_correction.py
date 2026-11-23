@@ -60,7 +60,7 @@ def marginal_suite(tmp_path):
 
 def test_holm_suppresses_marginal_flags_but_keeps_real_drop(marginal_suite):
     results, baseline = marginal_suite
-    flagged = check_regression(results, baseline)
+    flagged = check_regression(results, baseline, correction="holm")
     # m=3: adjusted p = [0.0583, 0.0583, 0.0087] -> only the real drop fires
     assert [cid for cid, _ in flagged] == ["real_drop"]
     # reported p is the Holm-adjusted value: 3 * 0.0028877490
